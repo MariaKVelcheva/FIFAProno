@@ -53,7 +53,6 @@ class Match(models.Model):
 
     @property
     def is_open(self):
-        """Predictions allowed until kickoff."""
         return self.kickoff > timezone.now() and self.status in ("SCHEDULED", "TIMED")
 
     @property

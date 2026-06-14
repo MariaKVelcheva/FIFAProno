@@ -1,4 +1,4 @@
-# PRONO ROYALE ⚽
+# FIFA WORLD CUPCAKE ⚽
 
 A friends-only World Cup 2026 prediction game built with Django.
 Predict scores, climb your squad's scoreboard, and wager promises (never money).
@@ -23,8 +23,8 @@ Predict scores, climb your squad's scoreboard, and wager promises (never money).
 ### 1. Clone and create a virtual environment
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/prono-royale.git
-cd prono-royale
+git clone  https://github.com/MariaKVelcheva/FIFAProno.git
+cd worldcup-prono
 
 # Linux / macOS
 python -m venv .venv && source .venv/bin/activate

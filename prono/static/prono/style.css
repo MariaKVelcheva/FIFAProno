@@ -1,5 +1,4 @@
-/* PRONO ROYALE — night-broadcast theme
-   bg: floodlit pitch dark · accent: scoreboard amber · type: Chakra Petch / Inter */
+
 :root {
   --pitch-900: #0a1f16;
   --pitch-700: #11362a;
@@ -25,7 +24,7 @@ body {
 }
 .wrap { max-width: 1060px; margin: 0 auto; padding: 1.5rem 1rem 4rem; }
 
-/* nav */
+
 .nav { display: flex; justify-content: space-between; align-items: center;
   padding: .9rem 1.2rem; border-bottom: 2px solid var(--pitch-500); }
 .brand { font-family: var(--display); font-weight: 700; font-size: 1.25rem;
@@ -39,7 +38,6 @@ body {
 .link-btn { background: none; border: none; color: var(--chalk-dim); cursor: pointer; font: inherit; }
 .link-btn:hover { color: var(--redcard); }
 
-/* hero */
 .hero { padding: 2.5rem 0 1.5rem; }
 .eyebrow { color: var(--amber); font-family: var(--display); letter-spacing: .12em;
   text-transform: uppercase; font-size: .8rem; margin: 0; }
