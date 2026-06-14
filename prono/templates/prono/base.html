@@ -1,0 +1,39 @@
+{% load static %}<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}PRONO ROYALE{% endblock %}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="{% static 'prono/style.css' %}">
+</head>
+<body>
+<nav class="nav">
+  <a class="brand" href="{% url 'dashboard' %}">PRONO<span>ROYALE</span></a>
+  <div class="nav-links">
+    {% if user.is_authenticated %}
+      <a href="{% url 'dashboard' %}">Matches</a>
+      <a href="{% url 'squads' %}">Squads</a>
+      <span class="me">{{ user.profile.avatar }} {{ user.username }}</span>
+      <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}<button class="link-btn">Log out</button></form>
+    {% else %}
+      <a href="{% url 'login' %}">Log in</a>
+      <a href="{% url 'signup' %}">Sign up</a>
+    {% endif %}
+  </div>
+</nav>
+<main class="wrap">
+  {% if messages %}{% for m in messages %}<p class="flash">{{ m }}</p>{% endfor %}{% endif %}
+  {% block content %}{% endblock %}
+</main>
+<script>
+function getCookie(name){
+  const v = document.cookie.split('; ').find(r=>r.startsWith(name+'='));
+  return v ? decodeURIComponent(v.split('=')[1]) : null;
+}
+const CSRF = getCookie('csrftoken');
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

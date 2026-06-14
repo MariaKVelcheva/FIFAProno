@@ -1,0 +1,69 @@
+{% extends "prono/base.html" %}
+{% block content %}
+<header class="hero">
+  <p class="eyebrow">World Cup 2026 · Group stage to final</p>
+  <h1>Call it before<br>the whistle.</h1>
+  <div class="score-pill">MY POINTS <strong>{{ total }}</strong></div>
+</header>
+
+<h2 class="section-title">Upcoming — predictions lock at kickoff</h2>
+<div class="match-grid">
+{% for m in upcoming %}
+  {% with p=preds|default:None %}
+  <article class="card match-card {% if not m.is_open %}locked{% endif %}" data-id="{{ m.id }}">
+    <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"D d M, H:i" }}{% if m.is_knockout %} · <span class="ko">×2 PTS</span>{% endif %}</p>
+    <div class="teams">
+      <span class="team">{% if m.home_team.crest %}<img src="{{ m.home_team.crest }}" alt="">{% endif %}{{ m.home_team.name|default:"TBD" }}</span>
+      <span class="team">{% if m.away_team.crest %}<img src="{{ m.away_team.crest }}" alt="">{% endif %}{{ m.away_team.name|default:"TBD" }}</span>
+    </div>
+    {% if m.is_open and m.home_team and m.away_team %}
+    <div class="predict-row">
+      <input type="number" min="0" max="20" class="score-in home" value="{% for mid, pr in preds.items %}{% if mid == m.id %}{{ pr.home_score }}{% endif %}{% endfor %}" placeholder="–">
+      <span class="dash">:</span>
+      <input type="number" min="0" max="20" class="score-in away" value="{% for mid, pr in preds.items %}{% if mid == m.id %}{{ pr.away_score }}{% endif %}{% endfor %}" placeholder="–">
+      <button class="btn save-btn">Lock it in</button>
+      <span class="saved-tick" hidden>✔ saved</span>
+    </div>
+    {% else %}<p class="meta locked-note">🔒 Locked</p>{% endif %}
+  </article>
+  {% endwith %}
+{% empty %}<p class="meta">No upcoming matches — run <code>python manage.py sync_matches</code>.</p>{% endfor %}
+</div>
+
+<h2 class="section-title">Results</h2>
+<div class="match-grid">
+{% for m in finished %}
+  <article class="card match-card finished">
+    <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"d M" }}</p>
+    <div class="teams final">
+      <span class="team">{{ m.home_team.name|default:"TBD" }}</span>
+      <span class="final-score">{{ m.home_score }}–{{ m.away_score }}</span>
+      <span class="team right">{{ m.away_team.name|default:"TBD" }}</span>
+    </div>
+    {% for mid, pr in preds.items %}{% if mid == m.id %}
+      <p class="meta">You said {{ pr.home_score }}–{{ pr.away_score }} → <strong class="pts">+{{ pr.points|default:0 }} pts</strong></p>
+    {% endif %}{% endfor %}
+  </article>
+{% empty %}<p class="meta">No results yet. The tournament is young.</p>{% endfor %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const card = btn.closest('.match-card');
+    const home = card.querySelector('.home').value, away = card.querySelector('.away').value;
+    if (home === '' || away === '') return;
+    const res = await fetch(`/predict/${card.dataset.id}/`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+      body: JSON.stringify({home, away})
+    });
+    const tick = card.querySelector('.saved-tick');
+    if (res.ok) { tick.hidden = false; setTimeout(()=>tick.hidden=true, 2000); }
+    else { alert((await res.json()).error || 'Could not save.'); }
+  });
+});
+</script>
+{% endblock %}

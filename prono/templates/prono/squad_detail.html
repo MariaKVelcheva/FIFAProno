@@ -1,0 +1,70 @@
+{% extends "prono/base.html" %}
+{% block content %}
+<h1 class="page-title">{{ squad.name }} <span class="meta">invite code <code>{{ squad.code }}</code></span></h1>
+
+<div class="two-col">
+  <section class="card scoreboard">
+    <h2>Scoreboard</h2>
+    <ol class="board">
+      {% for u in leaderboard %}
+      <li>
+        <span class="rank">{{ forloop.counter }}</span>
+        <span class="player">{{ u.profile.avatar }} {{ u.username }}</span>
+        <span class="exacts" title="exact scores">🎯 {{ u.exacts }}</span>
+        <span class="total">{{ u.total|default:0 }}</span>
+      </li>
+      {% endfor %}
+    </ol>
+  </section>
+
+  <section class="card">
+    <h2>Locker-room chat</h2>
+    <div id="chat" class="chat">
+      {% for m in chat %}
+      <p><span class="who">{{ m.author.profile.avatar }} {{ m.author.username }}</span> {{ m.text }} <span class="when">{{ m.created_at|date:"H:i" }}</span></p>
+      {% endfor %}
+    </div>
+    <form method="post" class="chat-form">{% csrf_token %}
+      <input name="text" maxlength="300" placeholder="Talk trash responsibly…" autocomplete="off" required>
+      <button class="btn" name="message">Send</button>
+    </form>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Wagers — promises only, no money</h2>
+  {% for w in wagers %}
+    <div class="wager status-{{ w.status }}">
+      <p><strong>{{ w.challenger.username }}</strong> vs <strong>{{ w.opponent.username }}</strong>
+        {% if w.match %} · on {{ w.match }}{% endif %} — “{{ w.stake }}”
+        <span class="tag">{{ w.get_status_display }}{% if w.winner %} · 🏆 {{ w.winner.username }}{% endif %}</span></p>
+      {% if w.status == 'P' and user == w.opponent %}
+        <form method="post" action="{% url 'wager_action' w.id 'accept' %}" class="inline">{% csrf_token %}<button class="btn small">Accept</button></form>
+        <form method="post" action="{% url 'wager_action' w.id 'decline' %}" class="inline">{% csrf_token %}<button class="btn small ghost">Decline</button></form>
+      {% elif w.status == 'A' %}
+        <form method="post" action="{% url 'wager_action' w.id 'settle-challenger' %}" class="inline">{% csrf_token %}<button class="btn small ghost">{{ w.challenger.username }} won</button></form>
+        <form method="post" action="{% url 'wager_action' w.id 'settle-opponent' %}" class="inline">{% csrf_token %}<button class="btn small ghost">{{ w.opponent.username }} won</button></form>
+      {% endif %}
+    </div>
+  {% empty %}<p class="meta">No wagers yet. Dare someone.</p>{% endfor %}
+  <h3>Throw down a challenge</h3>
+  <form method="post">{% csrf_token %}{{ wager_form.as_p }}
+    <button class="btn" name="wager">Propose wager</button></form>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const chatBox = document.getElementById('chat');
+chatBox.scrollTop = chatBox.scrollHeight;
+setInterval(async () => {
+  const res = await fetch("{% url 'squad_messages' squad.id %}");
+  if (!res.ok) return;
+  const data = await res.json();
+  chatBox.innerHTML = data.messages.map(m =>
+    `<p><span class="who">${m.avatar} ${m.author}</span> ${m.text.replace(/</g,'&lt;')} <span class="when">${m.at}</span></p>`
+  ).join('');
+  chatBox.scrollTop = chatBox.scrollHeight;
+}, 15000);
+</script>
+{% endblock %}

@@ -1,0 +1,177 @@
+import json
+
+from django.contrib import messages as flash
+from django.contrib.auth import login
+from django.contrib.auth.decorators import login_required
+from django.db.models import Count, Q, Sum
+from django.http import HttpResponseForbidden, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+from django.views.decorators.http import require_POST
+
+from .forms import JoinForm, SignUpForm, SquadForm, WagerForm
+from .models import Match, Membership, Message, Prediction, Squad, Wager
+
+
+def signup(request):
+    form = SignUpForm(request.POST or None)
+    if request.method == "POST" and form.is_valid():
+        user = form.save()
+        user.profile.avatar = form.cleaned_data["avatar"]
+        user.profile.save()
+        login(request, user)
+        return redirect("dashboard")
+    return render(request, "registration/signup.html", {"form": form})
+
+
+@login_required
+def dashboard(request):
+    now = timezone.now()
+    upcoming = Match.objects.filter(kickoff__gte=now).select_related("home_team", "away_team")[:18]
+    finished = (
+        Match.objects.filter(status="FINISHED")
+        .select_related("home_team", "away_team")
+        .order_by("-kickoff")[:12]
+    )
+    preds = {p.match_id: p for p in Prediction.objects.filter(user=request.user)}
+    total = Prediction.objects.filter(user=request.user).aggregate(s=Sum("points"))["s"] or 0
+    return render(
+        request,
+        "prono/dashboard.html",
+        {"upcoming": upcoming, "finished": finished, "preds": preds, "total": total},
+    )
+
+
+@login_required
+@require_POST
+def predict(request, match_id):
+    match = get_object_or_404(Match, pk=match_id)
+    if not match.is_open:
+        return JsonResponse({"error": "Predictions are locked for this match."}, status=400)
+    try:
+        data = json.loads(request.body)
+        home, away = int(data["home"]), int(data["away"])
+        assert 0 <= home <= 20 and 0 <= away <= 20
+    except (ValueError, KeyError, AssertionError, json.JSONDecodeError):
+        return JsonResponse({"error": "Invalid score."}, status=400)
+    Prediction.objects.update_or_create(
+        user=request.user, match=match, defaults={"home_score": home, "away_score": away}
+    )
+    return JsonResponse({"saved": True, "home": home, "away": away})
+
+
+@login_required
+def squads(request):
+    squad_form, join_form = SquadForm(), JoinForm()
+    if request.method == "POST":
+        if "create" in request.POST:
+            squad_form = SquadForm(request.POST)
+            if squad_form.is_valid():
+                squad = squad_form.save(commit=False)
+                squad.created_by = request.user
+                squad.save()
+                Membership.objects.create(user=request.user, squad=squad)
+                return redirect("squad_detail", squad.id)
+        elif "join" in request.POST:
+            join_form = JoinForm(request.POST)
+            if join_form.is_valid():
+                squad = Squad.objects.filter(code__iexact=join_form.cleaned_data["code"]).first()
+                if squad:
+                    Membership.objects.get_or_create(user=request.user, squad=squad)
+                    return redirect("squad_detail", squad.id)
+                flash.error(request, "No squad found with that code.")
+    my_squads = Squad.objects.filter(membership__user=request.user).annotate(n=Count("membership"))
+    return render(
+        request,
+        "prono/squads.html",
+        {"my_squads": my_squads, "squad_form": squad_form, "join_form": join_form},
+    )
+
+
+def _member_required(request, squad):
+    return Membership.objects.filter(user=request.user, squad=squad).exists()
+
+
+@login_required
+def squad_detail(request, squad_id):
+    squad = get_object_or_404(Squad, pk=squad_id)
+    if not _member_required(request, squad):
+        return HttpResponseForbidden("Not your squad.")
+
+    wager_form = WagerForm(squad, request.user)
+    if request.method == "POST":
+        if "message" in request.POST:
+            text = request.POST.get("text", "").strip()[:300]
+            if text:
+                Message.objects.create(squad=squad, author=request.user, text=text)
+            return redirect("squad_detail", squad.id)
+        if "wager" in request.POST:
+            wager_form = WagerForm(squad, request.user, request.POST)
+            if wager_form.is_valid():
+                wager = wager_form.save(commit=False)
+                wager.squad, wager.challenger = squad, request.user
+                wager.save()
+                return redirect("squad_detail", squad.id)
+
+    from django.contrib.auth import get_user_model
+
+    User = get_user_model()
+    leaderboard = (
+        User.objects.filter(membership__squad=squad)
+        .select_related("profile")
+        .annotate(
+            total=Sum("prediction__points"),
+            exacts=Count("prediction", filter=Q(prediction__points__gte=3)),
+        )
+        .order_by("-total")
+    )
+    return render(
+        request,
+        "prono/squad_detail.html",
+        {
+            "squad": squad,
+            "leaderboard": leaderboard,
+            "wagers": squad.wagers.select_related("challenger", "opponent", "winner", "match"),
+            "wager_form": wager_form,
+            "chat": squad.messages.select_related("author__profile").order_by("-created_at")[:50][::-1],
+        },
+    )
+
+
+@login_required
+def squad_messages(request, squad_id):
+    squad = get_object_or_404(Squad, pk=squad_id)
+    if not _member_required(request, squad):
+        return HttpResponseForbidden()
+    msgs = squad.messages.select_related("author__profile").order_by("-created_at")[:50]
+    return JsonResponse(
+        {
+            "messages": [
+                {
+                    "author": m.author.username,
+                    "avatar": m.author.profile.avatar,
+                    "text": m.text,
+                    "at": m.created_at.strftime("%H:%M"),
+                }
+                for m in reversed(msgs)
+            ]
+        }
+    )
+
+
+@login_required
+@require_POST
+def wager_action(request, wager_id, action):
+    wager = get_object_or_404(Wager, pk=wager_id)
+    me = request.user
+    if action == "accept" and me == wager.opponent and wager.status == Wager.PROPOSED:
+        wager.status = Wager.ACCEPTED
+    elif action == "decline" and me == wager.opponent and wager.status == Wager.PROPOSED:
+        wager.status = Wager.DECLINED
+    elif action.startswith("settle-") and me in (wager.challenger, wager.opponent) and wager.status == Wager.ACCEPTED:
+        winner = wager.challenger if action == "settle-challenger" else wager.opponent
+        wager.status, wager.winner = Wager.SETTLED, winner
+    else:
+        return HttpResponseForbidden()
+    wager.save()
+    return redirect("squad_detail", wager.squad_id)
