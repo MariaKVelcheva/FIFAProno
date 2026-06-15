@@ -1,3 +1,10 @@
+"""Prono scoring rules.
+
+Exact score          -> 3 pts
+Correct outcome only -> 1 pt
+Knockout matches     -> points doubled
+"""
+
 EXACT = 3
 OUTCOME = 1
 KNOCKOUT_MULTIPLIER = 2

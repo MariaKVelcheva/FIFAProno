@@ -24,7 +24,6 @@ def signup(request):
     return render(request, "registration/signup.html", {"form": form})
 
 
-@login_required
 def dashboard(request):
     now = timezone.now()
     upcoming = Match.objects.filter(kickoff__gte=now).select_related("home_team", "away_team")[:18]
@@ -33,13 +32,12 @@ def dashboard(request):
         .select_related("home_team", "away_team")
         .order_by("-kickoff")[:12]
     )
-    preds = {p.match_id: p for p in Prediction.objects.filter(user=request.user)}
-    total = Prediction.objects.filter(user=request.user).aggregate(s=Sum("points"))["s"] or 0
-    return render(
-        request,
-        "prono/dashboard.html",
-        {"upcoming": upcoming, "finished": finished, "preds": preds, "total": total},
-    )
+    if request.user.is_authenticated:
+        preds = {p.match_id: p for p in Prediction.objects.filter(user=request.user)}
+        total = Prediction.objects.filter(user=request.user).aggregate(s=Sum("points"))["s"] or 0
+    else:
+        preds, total = {}, 0
+    return render(request, "prono/dashboard.html", {"upcoming": upcoming, "finished": finished, "preds": preds, "total": total})
 
 
 @login_required

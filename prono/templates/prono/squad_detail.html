@@ -4,35 +4,48 @@
 
 <div class="two-col">
   <section class="card scoreboard">
-    <h2>Scoreboard</h2>
-    <ol class="board">
-      {% for u in leaderboard %}
-      <li>
-        <span class="rank">{{ forloop.counter }}</span>
-        <span class="player">{{ u.profile.avatar }} {{ u.username }}</span>
-        <span class="exacts" title="exact scores">🎯 {{ u.exacts }}</span>
-        <span class="total">{{ u.total|default:0 }}</span>
-      </li>
+    <h2>🍰 Cake stand</h2>
+    <div class="cake-stand">
+      {% for u in leaderboard|slice:":5" %}
+        <div class="tier rank-{{ forloop.counter }}"
+             style="--tier-w: {% if forloop.counter == 1 %}40%{% elif forloop.counter == 2 %}52%{% elif forloop.counter == 3 %}64%{% elif forloop.counter == 4 %}76%{% else %}88%{% endif %}">
+          <span class="rank-icon">{% if forloop.counter == 1 %}🏆{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}🧁{% endif %}</span>
+          <span class="player">{{ u.profile.avatar }} {{ u.username }}</span>
+          <span class="exacts" title="exact scores">🎯 {{ u.exacts }}</span>
+          <span class="total">{{ u.total|default:0 }}</span>
+        </div>
+      {% endfor %}
+      <div class="cake-plate"></div>
+    </div>
+    {% with rest=leaderboard|slice:"5:" %}
+    {% if rest %}
+    <ol class="also-baking">
+      {% for u in rest %}
+      <li>{{ forloop.counter|add:5 }}. {{ u.profile.avatar }} {{ u.username }}
+        <span class="exacts">🎯 {{ u.exacts }}</span>
+        <span class="total">{{ u.total|default:0 }}</span></li>
       {% endfor %}
     </ol>
+    {% endif %}
+    {% endwith %}
   </section>
 
   <section class="card">
-    <h2>Locker-room chat</h2>
+    <h2>Kitchen chat</h2>
     <div id="chat" class="chat">
       {% for m in chat %}
       <p><span class="who">{{ m.author.profile.avatar }} {{ m.author.username }}</span> {{ m.text }} <span class="when">{{ m.created_at|date:"H:i" }}</span></p>
       {% endfor %}
     </div>
     <form method="post" class="chat-form">{% csrf_token %}
-      <input name="text" maxlength="300" placeholder="Talk trash responsibly…" autocomplete="off" required>
+      <input name="text" maxlength="300" placeholder="Talk trash responsibly… or share a recipe" autocomplete="off" required>
       <button class="btn" name="message">Send</button>
     </form>
   </section>
 </div>
 
 <section class="card">
-  <h2>Wagers — promises only, no money</h2>
+  <h2>🍒 Wagers — promises only, no money</h2>
   {% for w in wagers %}
     <div class="wager status-{{ w.status }}">
       <p><strong>{{ w.challenger.username }}</strong> vs <strong>{{ w.opponent.username }}</strong>
@@ -46,8 +59,8 @@
         <form method="post" action="{% url 'wager_action' w.id 'settle-opponent' %}" class="inline">{% csrf_token %}<button class="btn small ghost">{{ w.opponent.username }} won</button></form>
       {% endif %}
     </div>
-  {% empty %}<p class="meta">No wagers yet. Dare someone.</p>{% endfor %}
-  <h3>Throw down a challenge</h3>
+  {% empty %}<p class="meta">No wagers yet. Dare someone to put their reputation on the line.</p>{% endfor %}
+  <h3>Throw down a challenge (loser bakes)</h3>
   <form method="post">{% csrf_token %}{{ wager_form.as_p }}
     <button class="btn" name="wager">Propose wager</button></form>
 </section>

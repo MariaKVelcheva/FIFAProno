@@ -1,17 +1,20 @@
 {% extends "prono/base.html" %}
 {% block content %}
 <header class="hero">
-  <p class="eyebrow">World Cup 2026 · Group stage to final</p>
-  <h1>Call it before<br>the whistle.</h1>
-  <div class="score-pill">MY POINTS <strong>{{ total }}</strong></div>
+  <p class="eyebrow">FIFA World Cupcake™ · Group stage to grand finale</p>
+  <h1>Half-baked<br>predictions<span class="accent"> with friends.</span></h1>
+    {% if user.is_authenticated %}
+  <div class="score-pill">🧁 MY POINTS <strong>{{ total }}</strong></div>
+{% endif %}
 </header>
 
-<h2 class="section-title">Upcoming — predictions lock at kickoff</h2>
+<h2 class="section-title">Fresh from the oven — predictions close at kickoff</h2>
 <div class="match-grid">
 {% for m in upcoming %}
   {% with p=preds|default:None %}
   <article class="card match-card {% if not m.is_open %}locked{% endif %}" data-id="{{ m.id }}">
-    <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"D d M, H:i" }}{% if m.is_knockout %} · <span class="ko">×2 PTS</span>{% endif %}</p>
+    <div class="wrapper-edge"></div>
+      <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"D d M, H:i" }}{% if m.is_knockout %} · <span class="ko">🍒 DOUBLE FROSTING ×2</span>{% endif %}</p>
     <div class="teams">
       <span class="team">{% if m.home_team.crest %}<img src="{{ m.home_team.crest }}" alt="">{% endif %}{{ m.home_team.name|default:"TBD" }}</span>
       <span class="team">{% if m.away_team.crest %}<img src="{{ m.away_team.crest }}" alt="">{% endif %}{{ m.away_team.name|default:"TBD" }}</span>
@@ -21,20 +24,26 @@
       <input type="number" min="0" max="20" class="score-in home" value="{% for mid, pr in preds.items %}{% if mid == m.id %}{{ pr.home_score }}{% endif %}{% endfor %}" placeholder="–">
       <span class="dash">:</span>
       <input type="number" min="0" max="20" class="score-in away" value="{% for mid, pr in preds.items %}{% if mid == m.id %}{{ pr.away_score }}{% endif %}{% endfor %}" placeholder="–">
-      <button class="btn save-btn">Lock it in</button>
-      <span class="saved-tick" hidden>✔ saved</span>
+      {% if user.is_authenticated %}
+  <button class="btn candle save-btn"><span class="flame">🕯️</span> Bake it in</button>
+  <span class="saved-tick" hidden>🧁 saved!</span>
+{% else %}
+  <a href="{% url 'signup' %}" class="btn candle">🕯️ Bake it in</a>
+{% endif %}
+      <span class="saved-tick" hidden>🧁 saved!</span>
     </div>
-    {% else %}<p class="meta locked-note">🔒 Locked</p>{% endif %}
+    {% else %}<p class="meta locked-note">📪 Oven's closed</p>{% endif %}
   </article>
   {% endwith %}
 {% empty %}<p class="meta">No upcoming matches — run <code>python manage.py sync_matches</code>.</p>{% endfor %}
 </div>
 
-<h2 class="section-title">Results</h2>
+<h2 class="section-title">Out of the oven — results</h2>
 <div class="match-grid">
 {% for m in finished %}
   <article class="card match-card finished">
-    <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"d M" }}</p>
+  <div class="wrapper-edge"></div>
+      <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"d M" }}</p>
     <div class="teams final">
       <span class="team">{{ m.home_team.name|default:"TBD" }}</span>
       <span class="final-score">{{ m.home_score }}–{{ m.away_score }}</span>
@@ -44,7 +53,7 @@
       <p class="meta">You said {{ pr.home_score }}–{{ pr.away_score }} → <strong class="pts">+{{ pr.points|default:0 }} pts</strong></p>
     {% endif %}{% endfor %}
   </article>
-{% empty %}<p class="meta">No results yet. The tournament is young.</p>{% endfor %}
+{% empty %}<p class="meta">Nothing baked yet. The tournament is young.</p>{% endfor %}
 </div>
 {% endblock %}
 
@@ -61,8 +70,16 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
       body: JSON.stringify({home, away})
     });
     const tick = card.querySelector('.saved-tick');
-    if (res.ok) { tick.hidden = false; setTimeout(()=>tick.hidden=true, 2000); }
-    else { alert((await res.json()).error || 'Could not save.'); }
+    if (res.ok) {
+      btn.classList.add('blown');
+      btn.querySelector('.flame').textContent = '💨';
+      tick.hidden = false;
+      setTimeout(() => {
+        tick.hidden = true;
+        btn.classList.remove('blown');
+        btn.querySelector('.flame').textContent = '🕯️';
+      }, 2000);
+    } else { alert((await res.json()).error || 'Could not save.'); }
   });
 });
 </script>

@@ -4,12 +4,12 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-AVATARS = ["⚽", "🦁", "🦅", "🐺", "🔥", "⚡", "🧤", "👑", "🚀", "🐙", "🥶", "🤖"]
+AVATARS = ["🧁", "🍩", "🍰", "🍪", "🎂", "🍫", "🍓", "🍒", "🍯", "🍭", "🥧", "🍬"]
 
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    avatar = models.CharField(max_length=8, default="⚽")
+    avatar = models.CharField(max_length=8, default="🧁")
 
     def __str__(self):
         return f"{self.avatar} {self.user.username}"
@@ -53,6 +53,7 @@ class Match(models.Model):
 
     @property
     def is_open(self):
+        """Predictions allowed until kickoff."""
         return self.kickoff > timezone.now() and self.status in ("SCHEDULED", "TIMED")
 
     @property

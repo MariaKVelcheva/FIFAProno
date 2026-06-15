@@ -1,3 +1,8 @@
+"""Pull World Cup fixtures & results from football-data.org and rescore.
+
+Usage: python manage.py sync_matches
+Free tier: 10 calls/min — this command makes exactly 1 call.
+"""
 import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
@@ -52,7 +57,7 @@ class Command(BaseCommand):
     @staticmethod
     def _team(team_data):
         if not team_data or not team_data.get("id"):
-            return None
+            return None  # TBD knockout slot
         team, _ = Team.objects.update_or_create(
             fd_id=team_data["id"],
             defaults={

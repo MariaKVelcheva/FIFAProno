@@ -1,7 +1,7 @@
 {% extends "prono/base.html" %}
 {% block content %}
 <div class="card auth-card">
-  <h1>Join the tournament</h1>
+  <h1>Join the bake-off</h1>
   <form method="post">{% csrf_token %}{{ form.as_p }}
     <button class="btn">Create account</button></form>
 </div>
