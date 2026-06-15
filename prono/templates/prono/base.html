@@ -27,6 +27,10 @@
   {% if messages %}{% for m in messages %}<p class="flash">{{ m }}</p>{% endfor %}{% endif %}
   {% block content %}{% endblock %}
 </main>
+<footer class="footer">
+  <p>🧁 FIFA World Cupcake — predictions for fun, bragging rights only.</p>
+  <p class="meta">Match data via <a href="https://www.football-data.org" target="_blank" rel="noopener">football-data.org</a></p>
+</footer>
 <script>
 function getCookie(name){
   const v = document.cookie.split('; ').find(r=>r.startsWith(name+'='));

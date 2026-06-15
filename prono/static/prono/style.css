@@ -193,3 +193,10 @@ h2 { font-family: var(--display); }
 @media (prefers-reduced-motion: reduce) {
   .saved-tick, .btn.candle .flame { animation: none; }
 }
+
+.footer { text-align: center; padding: 1.5rem 1rem; border-top: 3px solid var(--cocoa-700);
+  background: var(--cocoa-800); color: #ff4f8b; font-size: .85rem; }
+.footer p { margin: .3rem 0; }
+.footer a { color: #3a2418; text-decoration: none; }
+.footer a:hover { text-decoration: underline; }
+.footer .meta { font-size: .75rem; opacity: .8; }
