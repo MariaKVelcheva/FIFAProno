@@ -1,20 +1,22 @@
-# FIFA WORLD CUPCAKE ⚽
+# FIFA World Cupcake 🧁
 
 A friends-only World Cup 2026 prediction game built with Django.
-Predict scores, climb your squad's scoreboard, and wager promises (never money).
+Predict scores, climb your squad's cake stand, and wager promises (never money).
 
-![Python](https://img.shields.io/badge/Python-3.11+-blue) ![Django](https://img.shields.io/badge/Django-5.x-green)
+![Python](https://img.shields.io/badge/Python-3.12.4-blue) ![Django](https://img.shields.io/badge/Django-5.x-green)
 
 ---
 
 ## Features
 
 - **Predict scores** for all 104 World Cup matches — locked automatically at kickoff
-- **Scoring**: exact score = 3 pts · correct outcome = 1 pt · knockout matches ×2
-- **Squads** — create a group, share the 6-character invite code with friends
-- **Scoreboard** per squad with exact-score counter
-- **Wagers** — challenge a squad mate to a promise (loser cooks dinner, etc.), no money involved
-- **Locker-room chat** — simple message wall per squad, polls every 15 s
+- **Scoring**: exact score = 3 pts · correct outcome = 1 pt · knockout matches ×2 · won wager = 10 pts
+- **Squads** — create a group, share the 6-character invite code with friends (click to copy)
+- **Cake stand scoreboard** per squad — top 5 on tiered display, rest in the "also baking" list
+- **Bake-offs** — challenge a squad mate to a promise (loser cooks dinner, etc.), no money involved
+- **Kitchen chat** — message wall per squad, polls every 15s with toast notifications across all your squads
+- **Cupcake mascot avatars** — pick your dessert at signup
+- Browse matches and see results without an account — sign up only required to predict
 
 ---
 
@@ -22,32 +24,35 @@ Predict scores, climb your squad's scoreboard, and wager promises (never money).
 
 ### 1. Clone and create a virtual environment
 
-```bash
-git clone  https://github.com/MariaKVelcheva/FIFAProno.git
-cd worldcup-prono
+Clone the repo and navigate into it:
 
-# Linux / macOS
-python -m venv .venv && source .venv/bin/activate
+    git clone https://github.com/MariaKVelcheva/FIFAProno.git
+    cd worldcup-prono
 
-# Windows (PowerShell)
-python -m venv .venv
-.venv\Scripts\Activate.ps1
-```
+Linux / macOS:
 
-> If PowerShell blocks script execution: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
+    python -m venv .venv && source .venv/bin/activate
+
+Windows (PowerShell):
+
+    python -m venv .venv
+    .venv\Scripts\Activate.ps1
+
+If PowerShell blocks script execution: `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`
 
 ### 2. Install dependencies
 
-```bash
-pip install -r requirements.txt
-```
+    pip install -r requirements.txt
 
 ### 3. Configure environment
 
-```bash
-cp .env.example .env   # Linux/macOS
-copy .env.example .env # Windows
-```
+Linux/macOS:
+
+    cp .env.example .env
+
+Windows:
+
+    copy .env.example .env
 
 Edit `.env` and fill in at minimum:
 
@@ -56,41 +61,35 @@ Edit `.env` and fill in at minimum:
 | `SECRET_KEY` | ✅ | Generate with the command shown in `.env.example` |
 | `DEBUG` | ✅ | `True` locally, `False` in production |
 | `ALLOWED_HOSTS` | ✅ | `localhost,127.0.0.1` locally |
-| `FOOTBALL_DATA_TOKEN` | ✅ | Free at [football-data.org](https://www.football-data.org/client/register) |
-| `DATABASE_URL` | optional | Leave blank to use SQLite locally |
+| `FOOTBALL_DATA_TOKEN` | ✅ | Free at football-data.org/client/register |
+| `DATABASE_URL` | optional | Leave blank to use SQLite locally; Postgres URL in production |
 
 ### 4. Run migrations and create a superuser
 
-```bash
-python manage.py makemigrations prono
-python manage.py migrate
-python manage.py createsuperuser
-```
+    python manage.py makemigrations prono
+    python manage.py migrate
+    python manage.py createsuperuser
 
 ### 5. Pull match data
 
-```bash
-python manage.py sync_matches
-```
+    python manage.py sync_matches
 
-Fetches all 104 WC fixtures and any finished results (rescores predictions automatically).
-Free tier is 10 calls/min — this command makes exactly **1 call**. Re-run after each match day.
+Fetches all 104 WC fixtures and any finished results, rescores predictions automatically.
+Free tier allows 10 calls/min — this command makes exactly 1 call. Re-run after each match day.
 
-> No token yet? You can enter results manually in `/admin` (Match list is inline-editable).
+No token yet? Results can be entered manually in /admin (Match list is inline-editable).
 
 ### 6. Start the server
 
-```bash
-python manage.py runserver
-```
+    python manage.py runserver
 
-Open `http://127.0.0.1:8000`, sign up, create a squad, share the code.
+Open http://127.0.0.1:8000, sign up, create a squad, share the code.
 
 ---
 
 ## Scoring rules
 
-Defined in `prono/scoring.py` — easy to adjust before the tournament and resync:
+Defined in prono/scoring.py — easy to adjust and resync:
 
 | Result | Points |
 |---|---|
@@ -98,62 +97,77 @@ Defined in `prono/scoring.py` — easy to adjust before the tournament and resyn
 | Correct outcome (W/D/L) | 1 |
 | Wrong | 0 |
 | Knockout stage multiplier | ×2 |
+| Won a bake-off wager | +10 |
 
 ---
 
 ## Project structure
 
-```
-prono/
-├── models.py       # Profile, Team, Match, Prediction, Squad, Membership, Wager, Message
-├── scoring.py      # Pure scoring functions (isolated, easy to unit-test)
-├── views.py
-├── urls.py
-├── forms.py
-├── admin.py
-├── signals.py      # Auto-creates Profile on User creation
-├── management/
-│   └── commands/
-│       └── sync_matches.py   # The only file that talks to the API
-├── templates/
-│   ├── prono/
-│   └── registration/
-└── static/prono/
-    └── style.css
-config/
-├── settings.py
-├── urls.py
-└── wsgi.py
-```
+    prono/
+    ├── models.py         # Profile, Team, Match, Prediction, Squad, Membership, Wager, Message
+    ├── scoring.py        # Pure scoring functions (isolated, easy to unit-test)
+    ├── views.py
+    ├── urls.py
+    ├── forms.py
+    ├── admin.py
+    ├── signals.py        # Auto-creates Profile on User creation
+    ├── management/
+    │   └── commands/
+    │       └── sync_matches.py   # The only file that talks to the API
+    ├── templates/
+    │   ├── prono/
+    │   └── registration/
+    └── static/prono/
+        ├── style.css
+        └── images/
+            ├── cupcake.png       # Hero illustration
+            └── wrapper.png       # Match card decoration
+    config/
+    ├── settings.py
+    ├── urls.py
+    └── wsgi.py
+    render.yaml           # Render blueprint (web service + Postgres)
+    runtime.txt           # Python 3.12.4
 
 ---
 
-## Deployment (Render / Railway)
+## Deployment (Render)
 
-For deployment, set in your platform's environment variables:
+The repo includes a render.yaml blueprint — connect your GitHub repo on Render via
+New -> Blueprint and it will create the web service and PostgreSQL database automatically.
 
-```
-DEBUG=False
-SECRET_KEY=<strong random key>
-ALLOWED_HOSTS=yourapp.onrender.com
-FOOTBALL_DATA_TOKEN=<your token>
-DATABASE_URL=<postgres url from platform>
-```
+After deploy, add FOOTBALL_DATA_TOKEN manually in the service's Environment tab, then run
+the following via Render's Shell tab to populate match data:
 
-Add `gunicorn` and `psycopg2-binary` to `requirements.txt`, then use:
-- **Build command**: `pip install -r requirements.txt && python manage.py migrate`
-- **Start command**: `gunicorn config.wsgi`
+    python manage.py sync_matches
+
+Environment variables set automatically by the blueprint:
+
+| Variable | How set |
+|---|---|
+| `SECRET_KEY` | Auto-generated by Render |
+| `DATABASE_URL` | Injected from the Postgres instance |
+| `DEBUG` | False |
+| `ALLOWED_HOSTS` | world-cupcake.onrender.com |
+
+Free tier note: the web service spins down after 15 minutes of inactivity and takes ~30 seconds
+to wake on the next request. Fine for active use during the tournament.
 
 ---
 
 ## Tech stack
 
-- [Django 5](https://djangoproject.com) — backend, ORM, auth
-- [football-data.org](https://football-data.org) — free World Cup fixture & results API
-- Vanilla JS — prediction inputs, chat polling
+- Django 5 — backend, ORM, auth — https://djangoproject.com
+- football-data.org — free World Cup fixture and results API
+- Vanilla JS — prediction inputs, chat polling, toast notifications
+- WhiteNoise — static file serving in production
 - SQLite (local) / PostgreSQL (production)
 
 ---
+## A note on authorship
+
+Designed and directed by a human. Baked mostly by Claude (Anthropic).
+The frosting choices were entirely mine.
 
 ## License
 
