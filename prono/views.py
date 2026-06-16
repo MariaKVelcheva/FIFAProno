@@ -34,7 +34,9 @@ def dashboard(request):
     )
     if request.user.is_authenticated:
         preds = {p.match_id: p for p in Prediction.objects.filter(user=request.user)}
-        total = Prediction.objects.filter(user=request.user).aggregate(s=Sum("points"))["s"] or 0
+        pred_total = Prediction.objects.filter(user=request.user).aggregate(s=Sum("points"))["s"] or 0
+        wager_wins = Wager.objects.filter(winner=request.user, status=Wager.SETTLED).count()
+        total = pred_total + wager_wins * 10
     else:
         preds, total = {}, 0
     return render(request, "prono/dashboard.html", {"upcoming": upcoming, "finished": finished, "preds": preds, "total": total})
@@ -96,6 +98,8 @@ def squad_detail(request, squad_id):
     if not _member_required(request, squad):
         return HttpResponseForbidden("Not your squad.")
 
+    Membership.objects.filter(user=request.user, squad=squad).update(last_read_at=timezone.now())
+
     wager_form = WagerForm(squad, request.user)
     if request.method == "POST":
         if "message" in request.POST:
@@ -114,15 +118,27 @@ def squad_detail(request, squad_id):
     from django.contrib.auth import get_user_model
 
     User = get_user_model()
-    leaderboard = (
+
+    leaderboard = list(
         User.objects.filter(membership__squad=squad)
         .select_related("profile")
         .annotate(
             total=Sum("prediction__points"),
             exacts=Count("prediction", filter=Q(prediction__points__gte=3)),
         )
-        .order_by("-total")
     )
+    wager_wins = dict(
+        Wager.objects.filter(squad=squad, status=Wager.SETTLED)
+        .exclude(winner__isnull=True)
+        .values("winner")
+        .annotate(n=Count("id"))
+        .values_list("winner", "n")
+    )
+    for u in leaderboard:
+        bonus = wager_wins.get(u.id, 0) * 10
+        u.total = (u.total or 0) + bonus
+    leaderboard.sort(key=lambda u: -u.total)
+
     return render(
         request,
         "prono/squad_detail.html",
@@ -173,3 +189,13 @@ def wager_action(request, wager_id, action):
         return HttpResponseForbidden()
     wager.save()
     return redirect("squad_detail", wager.squad_id)
+
+
+@login_required
+def notifications(request):
+    data = []
+    for m in Membership.objects.filter(user=request.user).select_related("squad"):
+        count = Message.objects.filter(squad=m.squad, created_at__gt=m.last_read_at).exclude(author=request.user).count()
+        if count:
+            data.append({"squad_id": m.squad_id, "squad_name": m.squad.name, "count": count})
+    return JsonResponse({"squads": data})

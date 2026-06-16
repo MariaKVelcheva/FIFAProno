@@ -1,10 +1,26 @@
 from django import forms
+from django.contrib.auth import password_validation
 from django.contrib.auth.forms import UserCreationForm
 
 from .models import AVATARS, Squad, Wager
 
 
 class SignUpForm(UserCreationForm):
+    password1 = forms.CharField(
+        label="Password",
+        required=True,
+        strip=False,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        help_text="The password must be at least 8 characters long.",
+    )
+
+    password2 = forms.CharField(
+        label="Confirm password",
+        required=True,
+        widget=forms.PasswordInput(attrs={"autocomplete": "new-password"}),
+        strip=False,
+    )
+
     avatar = forms.ChoiceField(
         choices=[(a, a) for a in AVATARS],
         widget=forms.RadioSelect,
@@ -40,4 +56,4 @@ class WagerForm(forms.ModelForm):
         self.fields["match"].required = False
         self.fields["match"].queryset = Match.objects.filter(
             status__in=["SCHEDULED", "TIMED"]
-        )[:40]
+        )

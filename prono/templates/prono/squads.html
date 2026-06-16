@@ -1,23 +1,23 @@
 {% extends "prono/base.html" %}
 {% block content %}
-<h1 class="page-title">Squads</h1>
+<h1 class="page-title">Kitchen brigades</h1>
 <div class="two-col">
   <section class="card">
-    <h2>My squads</h2>
+    <h2>My kitchen brigades</h2>
     {% for s in my_squads %}
       <a class="squad-row" href="{% url 'squad_detail' s.id %}">
         <strong>{{ s.name }}</strong>
-        <span class="meta">{{ s.n }} member{{ s.n|pluralize }} · code <code>{{ s.code }}</code></span>
+        <span class="meta">· {{ s.n }} member{{ s.n|pluralize }}  </span>
       </a>
-    {% empty %}<p class="meta">No squad yet. Create one and share the code.</p>{% endfor %}
+    {% empty %}<p class="meta">No kitchen brigades yet. Create one and share the join recipe.</p>{% endfor %}
   </section>
   <section class="card">
-    <h2>Create a squad</h2>
+    <h2>Create a kitchen brigade</h2>
     <form method="post">{% csrf_token %}{{ squad_form.as_p }}
-      <button class="btn" name="create">Create squad</button></form>
-    <h2>Join with a code</h2>
+      <button class="btn" name="create">Create a kitchen brigade</button></form>
+    <h2>Have a join recipe?</h2>
     <form method="post">{% csrf_token %}{{ join_form.as_p }}
-      <button class="btn" name="join">Join squad</button></form>
+      <button class="btn" name="join">Join kitchen brigade</button></form>
   </section>
 </div>
 {% endblock %}

@@ -1,7 +1,6 @@
 {% extends "prono/base.html" %}
 {% block content %}
-<h1 class="page-title">{{ squad.name }} <span class="meta">invite code <code>{{ squad.code }}</code></span></h1>
-
+<h1 class="page-title">{{ squad.name }} <span class="meta" style="font-size: 1rem; margin-left: 2rem;">invite code <code class="copy-code" data-code="{{ squad.code }}" title="Click to copy" style="color: #2e9e5b; cursor: pointer;">{{ squad.code }}</code></span></h1>
 <div class="two-col">
   <section class="card scoreboard">
     <h2>🍰 Cake stand</h2>
@@ -38,14 +37,14 @@
       {% endfor %}
     </div>
     <form method="post" class="chat-form">{% csrf_token %}
-      <input name="text" maxlength="300" placeholder="Talk trash responsibly… or share a recipe" autocomplete="off" required>
+      <input name="text" maxlength="300" placeholder="Talk trash responsibly-- or share a recipe" autocomplete="off" required>
       <button class="btn" name="message">Send</button>
     </form>
   </section>
 </div>
 
 <section class="card">
-  <h2>🍒 Wagers — promises only, no money</h2>
+  <h2>🍒 Bake-offs!</h2>
   {% for w in wagers %}
     <div class="wager status-{{ w.status }}">
       <p><strong>{{ w.challenger.username }}</strong> vs <strong>{{ w.opponent.username }}</strong>
@@ -59,15 +58,25 @@
         <form method="post" action="{% url 'wager_action' w.id 'settle-opponent' %}" class="inline">{% csrf_token %}<button class="btn small ghost">{{ w.opponent.username }} won</button></form>
       {% endif %}
     </div>
-  {% empty %}<p class="meta">No wagers yet. Dare someone to put their reputation on the line.</p>{% endfor %}
-  <h3>Throw down a challenge (loser bakes)</h3>
+  {% empty %}<p class="meta">No back offs yet. Dare someone to put their reputation on the line.</p>{% endfor %}
+  <h3>Throw a glove - or an apron</h3>
   <form method="post">{% csrf_token %}{{ wager_form.as_p }}
-    <button class="btn" name="wager">Propose wager</button></form>
+    <button class="btn" name="wager">Bake off!</button></form>
 </section>
 {% endblock %}
 
 {% block scripts %}
 <script>
+localStorage.setItem('toast_{{ squad.id }}', '0');
+
+document.querySelectorAll('.copy-code').forEach(el => {
+  el.addEventListener('click', () => {
+    navigator.clipboard.writeText(el.dataset.code);
+    const original = el.textContent;
+    el.textContent = 'Copied!';
+    setTimeout(() => el.textContent = original, 1200);
+  });
+});
 const chatBox = document.getElementById('chat');
 chatBox.scrollTop = chatBox.scrollHeight;
 setInterval(async () => {

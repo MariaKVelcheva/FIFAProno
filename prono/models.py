@@ -100,6 +100,7 @@ class Membership(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     squad = models.ForeignKey(Squad, on_delete=models.CASCADE)
     joined_at = models.DateTimeField(auto_now_add=True)
+    last_read_at = models.DateTimeField(default=timezone.now)
 
     class Meta:
         unique_together = ("user", "squad")

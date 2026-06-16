@@ -8,7 +8,7 @@
 {% endif %}
 </header>
 
-<h2 class="section-title">Fresh from the oven — predictions close at kickoff</h2>
+<h2 class="section-title">Fresh from the oven — make your predictions</h2>
 <div class="match-grid">
 {% for m in upcoming %}
   {% with p=preds|default:None %}
@@ -28,7 +28,7 @@
   <button class="btn candle save-btn"><span class="flame">🕯️</span> Bake it in</button>
   <span class="saved-tick" hidden>🧁 saved!</span>
 {% else %}
-  <a href="{% url 'signup' %}" class="btn candle">🕯️ Bake it in</a>
+  <a href="{% url 'signup' %}" class="btn candle" style="text-decoration: none;">🕯️ Bake it in</a>
 {% endif %}
       <span class="saved-tick" hidden>🧁 saved!</span>
     </div>
@@ -53,7 +53,7 @@
       <p class="meta">You said {{ pr.home_score }}–{{ pr.away_score }} → <strong class="pts">+{{ pr.points|default:0 }} pts</strong></p>
     {% endif %}{% endfor %}
   </article>
-{% empty %}<p class="meta">Nothing baked yet. The tournament is young.</p>{% endfor %}
+{% empty %}<p class="meta">Nothing baked yet.</p>{% endfor %}
 </div>
 {% endblock %}
 

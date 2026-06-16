@@ -6,7 +6,7 @@
 <title>{% block title %}FIFA World Cupcake 🧁{% endblock %}</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="{% static 'prono/style.css' %}?v=2">
+<link rel="stylesheet" href="{% static 'prono/style.css' %}?v=4">
 </head>
 <body>
 <nav class="nav">
@@ -14,7 +14,7 @@
   <div class="nav-links">
     {% if user.is_authenticated %}
       <a href="{% url 'dashboard' %}">Matches</a>
-      <a href="{% url 'squads' %}">Squads</a>
+      <a href="{% url 'squads' %}">Kitchen brigades<span class="notif-badge" id="squad-badge" hidden></span></a>
       <span class="me">{{ user.profile.avatar }} {{ user.username }}</span>
       <form method="post" action="{% url 'logout' %}" class="inline">{% csrf_token %}<button class="link-btn">Log out</button></form>
     {% else %}
@@ -31,6 +31,38 @@
   <p>🧁 FIFA World Cupcake — predictions for fun, bragging rights only.</p>
   <p class="meta">Match data via <a href="https://www.football-data.org" target="_blank" rel="noopener">football-data.org</a></p>
 </footer>
+{% if user.is_authenticated %}
+<div id="toast" class="toast" hidden></div>
+<script>
+async function pollNotifications() {
+  try {
+    const res = await fetch("{% url 'notifications' %}");
+    if (!res.ok) return;
+    const data = await res.json();
+    const badge = document.getElementById('squad-badge');
+    const total = data.squads.reduce((s, sq) => s + sq.count, 0);
+    if (total > 0) { badge.textContent = total; badge.hidden = false; } else { badge.hidden = true; }
+    for (const sq of data.squads) {
+      const key = 'toast_' + sq.squad_id;
+      const last = parseInt(localStorage.getItem(key) || '0');
+      if (sq.count > last) {
+        localStorage.setItem(key, sq.count);
+        showToast(`🧁 New message in ${sq.squad_name}`, `/squads/${sq.squad_id}/`);
+      }
+    }
+  } catch (e) {}
+}
+function showToast(text, url) {
+  const toast = document.getElementById('toast');
+  toast.textContent = text;
+  toast.onclick = () => window.location.href = url;
+  toast.hidden = false;
+  setTimeout(() => toast.hidden = true, 6000);
+}
+pollNotifications();
+setInterval(pollNotifications, 15000);
+</script>
+{% endif %}
 <script>
 function getCookie(name){
   const v = document.cookie.split('; ').find(r=>r.startsWith(name+'='));
