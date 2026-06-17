@@ -231,3 +231,19 @@ a .btn {
   color: var(--choco-text); padding: .7rem 1.1rem; border-radius: 12px;
   box-shadow: 0 4px 0 var(--cocoa-700); cursor: pointer; font-weight: 700;
   z-index: 1000; max-width: 280px; }
+
+.profile-header { display: flex; align-items: center; gap: 1.2rem; padding: 2rem 0 1rem; flex-wrap: wrap; }
+.profile-avatar { font-size: 3.5rem; line-height: 1; }
+
+.pred-table { width: 100%; border-collapse: collapse; margin-top: .5rem; }
+.pred-table th { text-align: left; font-family: var(--display); padding: .5rem .7rem;
+  border-bottom: 2px solid var(--cream-dim); color: var(--choco-text); background: var(--cream); }
+.pred-table td { padding: .45rem .7rem; border-bottom: 1px dashed var(--cream-dim);
+  background: var(--cream); color: var(--choco-text); font-size: .9rem; }
+.pred-table tr.exact td { background: #f0fff4; }
+.pred-table tr.miss td { background: #fff5f5; }
+.pred-table tr.outcome td { background: #fffbf0; }
+.pick { font-family: var(--display); font-weight: 600; }
+.pred-table td.exact { background: #f0fff4; }
+.pred-table td.miss { background: #fff5f5; }
+.pred-table td.outcome { background: #fffbf0; }

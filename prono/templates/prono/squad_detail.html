@@ -9,7 +9,10 @@
         <div class="tier rank-{{ forloop.counter }}"
              style="--tier-w: {% if forloop.counter == 1 %}40%{% elif forloop.counter == 2 %}52%{% elif forloop.counter == 3 %}64%{% elif forloop.counter == 4 %}76%{% else %}88%{% endif %}">
           <span class="rank-icon">{% if forloop.counter == 1 %}🏆{% elif forloop.counter == 2 %}🥈{% elif forloop.counter == 3 %}🥉{% else %}🧁{% endif %}</span>
-          <span class="player">{{ u.profile.avatar }} {{ u.username }}</span>
+          <span class="player">
+  {{ u.profile.avatar }}
+  <a href="{% url 'player_profile' u.username %}" style="color:inherit;text-decoration:none;">{{ u.username }}</a>
+</span>
           <span class="exacts" title="exact scores">🎯 {{ u.exacts }}</span>
           <span class="total">{{ u.total|default:0 }}</span>
         </div>
@@ -18,13 +21,14 @@
     </div>
     {% with rest=leaderboard|slice:"5:" %}
     {% if rest %}
-    <ol class="also-baking">
-      {% for u in rest %}
-      <li>{{ forloop.counter|add:5 }}. {{ u.profile.avatar }} {{ u.username }}
-        <span class="exacts">🎯 {{ u.exacts }}</span>
-        <span class="total">{{ u.total|default:0 }}</span></li>
-      {% endfor %}
-    </ol>
+        <ol class="also-baking">
+  {% for u in rest %}
+  <li>{{ forloop.counter|add:5 }}. {{ u.profile.avatar }} <a href="{% url 'player_profile' u.username %}" style="color:inherit;text-decoration:none;">{{ u.username }}</a>
+    <span class="exacts">🎯 {{ u.exacts }}</span>
+    <span class="total">{{ u.total|default:0 }}</span>
+  </li>
+  {% endfor %}
+</ol>
     {% endif %}
     {% endwith %}
   </section>

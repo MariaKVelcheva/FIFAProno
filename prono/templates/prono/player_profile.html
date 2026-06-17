@@ -1,0 +1,82 @@
+{% extends "prono/base.html" %}
+{% block content %}
+<div class="profile-header">
+  <span class="profile-avatar">{{ viewed.profile.avatar }}</span>
+  <div>
+    <h1 class="page-title" style="margin:0">{{ viewed.username }}</h1>
+    <div class="score-pill" style="margin-top:.5rem">🧁 TOTAL POINTS <strong>{{ total }}</strong></div>
+  </div>
+  {% if not is_own and shared_squads %}
+    <a href="{% url 'compare_cakes' viewed.username request.user.username %}" class="btn" style="margin-left:auto; text-decoration: none;">🎂 Compare cakes</a>
+  {% endif %}
+</div>
+
+<h2 class="section-title">Kitchen brigades</h2>
+{% if shared_squads %}
+  <div class="squad-list">
+    {% for s in shared_squads %}
+      <a class="squad-row card" href="{% url 'squad_detail' s.id %}">
+        <strong>{{ s.name }}</strong>
+        <span class="meta">{{ s.code }}</span>
+      </a>
+    {% endfor %}
+  </div>
+{% else %}
+  <p class="meta">No shared squads.</p>
+{% endif %}
+
+{% if is_own and upcoming_preds %}
+<h2 class="section-title">
+  Your upcoming picks
+  <button class="btn ghost small" id="toggle-upcoming" style="margin-left:1rem">Hide</button>
+</h2>
+<div id="upcoming-table">
+  <table class="pred-table">
+    <thead><tr><th>Match</th><th>Group</th><th>Kickoff</th><th>Your pick</th></tr></thead>
+    <tbody>
+    {% for p in upcoming_preds %}
+      <tr>
+        <td>{{ p.match.home_team.name|default:"TBD" }} vs {{ p.match.away_team.name|default:"TBD" }}</td>
+        <td>{{ p.match.group|default:p.match.stage }}</td>
+        <td>{{ p.match.kickoff|date:"D d M, H:i" }}</td>
+        <td class="pick">{{ p.home_score }}–{{ p.away_score }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endif %}
+
+<h2 class="section-title">Past predictions</h2>
+{% if past_preds %}
+  <table class="pred-table">
+    <thead><tr><th>Match</th><th>Result</th><th>Your pick</th><th>Points</th></tr></thead>
+    <tbody>
+    {% for p in past_preds %}
+      <tr class="{% if p.points == 3 or p.points == 6 %}exact{% elif p.points > 0 %}outcome{% else %}miss{% endif %}">
+        <td>{{ p.match.home_team.name|default:"TBD" }} vs {{ p.match.away_team.name|default:"TBD" }}</td>
+        <td>{{ p.match.home_score }}–{{ p.match.away_score }}</td>
+        <td class="pick">{{ p.home_score }}–{{ p.away_score }}</td>
+        <td class="pts">{% if p.points %}+{{ p.points }}{% else %}0{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+{% else %}
+  <p class="meta">No past predictions yet.</p>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const btn = document.getElementById('toggle-upcoming');
+if (btn) {
+  const tbl = document.getElementById('upcoming-table');
+  btn.addEventListener('click', () => {
+    const hidden = tbl.style.display === 'none';
+    tbl.style.display = hidden ? '' : 'none';
+    btn.textContent = hidden ? 'Hide' : 'Show';
+  });
+}
+</script>
+{% endblock %}

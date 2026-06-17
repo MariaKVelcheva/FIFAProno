@@ -1,0 +1,33 @@
+{% extends "prono/base.html" %}
+{% block content %}
+<h1 class="page-title">🎂 Compare cakes</h1>
+<p class="meta" style="margin-bottom:1.5rem">
+  {{ viewed.profile.avatar }} {{ viewed.username }} vs {{ other.profile.avatar }} {{ other.username }}
+</p>
+<table class="pred-table">
+  <thead>
+    <tr>
+      <th>Match</th>
+      <th>Result</th>
+      <th>{{ viewed.profile.avatar }} {{ viewed.username }}</th>
+      <th>{{ other.profile.avatar }} {{ other.username }}</th>
+    </tr>
+  </thead>
+  <tbody>
+  {% for row in rows %}
+    <tr>
+      <td>{{ row.match.home_team.name|default:"TBD" }} vs {{ row.match.away_team.name|default:"TBD" }}</td>
+      <td>{{ row.match.home_score }}–{{ row.match.away_score }}</td>
+      <td class="pick {% if row.pred_a %}{% if row.pred_a.points == 3 or row.pred_a.points == 6 %}exact{% elif row.pred_a.points > 0 %}outcome{% else %}miss{% endif %}{% endif %}">
+        {% if row.pred_a %}{{ row.pred_a.home_score }}–{{ row.pred_a.away_score }} <span class="pts">(+{{ row.pred_a.points|default:0 }})</span>{% else %}—{% endif %}
+      </td>
+      <td class="pick {% if row.pred_b %}{% if row.pred_b.points == 3 or row.pred_b.points == 6 %}exact{% elif row.pred_b.points > 0 %}outcome{% else %}miss{% endif %}{% endif %}">
+        {% if row.pred_b %}{{ row.pred_b.home_score }}–{{ row.pred_b.away_score }} <span class="pts">(+{{ row.pred_b.points|default:0 }})</span>{% else %}—{% endif %}
+      </td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="4" class="meta">No finished matches yet.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endblock %}

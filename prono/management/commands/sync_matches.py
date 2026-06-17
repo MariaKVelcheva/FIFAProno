@@ -1,13 +1,9 @@
-"""Pull World Cup fixtures & results from football-data.org and rescore.
-
-Usage: python manage.py sync_matches
-Free tier: 10 calls/min — this command makes exactly 1 call.
-"""
 import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.utils.dateparse import parse_datetime
-
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 from prono.models import Match, Team
 from prono.scoring import score_match
 
@@ -22,7 +18,16 @@ class Command(BaseCommand):
         if not token:
             raise CommandError("Set FOOTBALL_DATA_TOKEN in your .env (free at football-data.org)")
 
-        resp = requests.get(URL, headers={"X-Auth-Token": token}, timeout=30)
+        session = requests.Session()
+        retries = Retry(
+            total=3,
+            backoff_factor=2,
+            status_forcelist=[500, 502, 503, 504],
+        )
+        session.mount("https://", HTTPAdapter(max_retries=retries))
+        resp = session.get(URL, headers={"X-Auth-Token": token}, timeout=30)
+        resp.raise_for_status()
+
         resp.raise_for_status()
         data = resp.json()
 

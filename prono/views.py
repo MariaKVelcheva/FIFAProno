@@ -11,6 +11,8 @@ from django.views.decorators.http import require_POST
 
 from .forms import JoinForm, SignUpForm, SquadForm, WagerForm
 from .models import Match, Membership, Message, Prediction, Squad, Wager
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 
 def signup(request):
@@ -199,3 +201,72 @@ def notifications(request):
         if count:
             data.append({"squad_id": m.squad_id, "squad_name": m.squad.name, "count": count})
     return JsonResponse({"squads": data})
+
+
+def player_profile(request, username):
+    from django.db.models import Sum
+    viewed = get_object_or_404(
+        User.objects.select_related("profile"), username=username
+    )
+    is_own = request.user.is_authenticated and request.user == viewed
+
+    shared_squads = []
+    if request.user.is_authenticated:
+        shared_squads = Squad.objects.filter(
+            membership__user=request.user
+        ).filter(
+            membership__user=viewed
+        ).distinct()
+
+    past_preds = Prediction.objects.filter(
+        user=viewed, match__status="FINISHED"
+    ).select_related("match__home_team", "match__away_team").order_by("-match__kickoff")
+
+    upcoming_preds = []
+    if is_own:
+        upcoming_preds = Prediction.objects.filter(
+            user=viewed, match__kickoff__gt=timezone.now()
+        ).select_related("match__home_team", "match__away_team").order_by("match__kickoff")
+
+    pred_total = Prediction.objects.filter(user=viewed).aggregate(s=Sum("points"))["s"] or 0
+    wager_wins = Wager.objects.filter(winner=viewed, status=Wager.SETTLED).count()
+    total = pred_total + wager_wins * 10
+
+    return render(request, "prono/player_profile.html", {
+        "viewed": viewed,
+        "is_own": is_own,
+        "shared_squads": shared_squads,
+        "past_preds": past_preds,
+        "upcoming_preds": upcoming_preds,
+        "total": total,
+    })
+
+
+def compare_cakes(request, username, other_username):
+    if not request.user.is_authenticated:
+        return redirect("login")
+    viewed = get_object_or_404(User.objects.select_related("profile"), username=username)
+    other = get_object_or_404(User.objects.select_related("profile"), username=other_username)
+
+    # must share at least one squad with the requester
+    shared = Squad.objects.filter(
+        membership__user=request.user
+    ).filter(
+        membership__user=viewed
+    ).filter(
+        membership__user=other
+    ).exists()
+    if not shared:
+        return HttpResponseForbidden("You need to be in a shared squad to compare.")
+
+    finished = Match.objects.filter(status="FINISHED").order_by("-kickoff")
+    preds_a = {p.match_id: p for p in Prediction.objects.filter(user=viewed, match__status="FINISHED")}
+    preds_b = {p.match_id: p for p in Prediction.objects.filter(user=other, match__status="FINISHED")}
+    rows = [{"match": m, "pred_a": preds_a.get(m.id), "pred_b": preds_b.get(m.id)}
+            for m in finished]
+
+    return render(request, "prono/compare_cakes.html", {
+        "viewed": viewed,
+        "other": other,
+        "rows": rows,
+    })
