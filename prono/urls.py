@@ -13,4 +13,5 @@ urlpatterns = [
     path("notifications/", views.notifications, name="notifications"),
     path("players/<str:username>/", views.player_profile, name="player_profile"),
     path("players/<str:username>/compare/<str:other_username>/", views.compare_cakes, name="compare_cakes"),
+    path("wagers/<int:wager_id>/claim/", views.claim_wager, name="claim_wager"),
 ]

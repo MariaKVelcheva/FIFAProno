@@ -30,4 +30,31 @@
   {% endfor %}
   </tbody>
 </table>
+    
+    {% if compare_wager_rows %}
+<h2 class="section-title" style="margin-top:2rem">🍒 Bake-off ledger</h2>
+<table class="pred-table">
+  <thead>
+    <tr><th>Outcome</th><th>Stake</th><th>Status</th></tr>
+  </thead>
+  <tbody>
+  {% for row in compare_wager_rows %}
+    <tr>
+      <td>
+        {% if row.won %}
+          🏆 <strong>{{ row.winner.username }}</strong> gets from <strong>{{ row.loser.username }}</strong>
+        {% else %}
+          📋 <strong>{{ row.winner.username }}</strong> is owed by <strong>{{ row.loser.username }}</strong>
+        {% endif %}
+      </td>
+      <td>{{ row.wager.stake }}</td>
+      <td>
+        {% if row.wager.claimed %}<span class="claimed-tick">✔ Claimed!</span>
+        {% else %}<span class="meta">Pending</span>{% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
 {% endblock %}

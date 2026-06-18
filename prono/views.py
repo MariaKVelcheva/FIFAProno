@@ -232,6 +232,22 @@ def player_profile(request, username):
     wager_wins = Wager.objects.filter(winner=viewed, status=Wager.SETTLED).count()
     total = pred_total + wager_wins * 10
 
+    settled_wagers = Wager.objects.filter(
+        status=Wager.SETTLED
+    ).filter(
+        Q(challenger=viewed) | Q(opponent=viewed)
+    ).select_related("challenger", "opponent", "winner")
+
+    wager_rows = []
+    for w in settled_wagers:
+        loser = w.opponent if w.winner == w.challenger else w.challenger
+        wager_rows.append({
+            "wager": w,
+            "won": w.winner == viewed,
+            "winner": w.winner,
+            "loser": loser,
+        })
+
     return render(request, "prono/player_profile.html", {
         "viewed": viewed,
         "is_own": is_own,
@@ -239,6 +255,7 @@ def player_profile(request, username):
         "past_preds": past_preds,
         "upcoming_preds": upcoming_preds,
         "total": total,
+        "wager_rows": wager_rows,
     })
 
 
@@ -248,7 +265,6 @@ def compare_cakes(request, username, other_username):
     viewed = get_object_or_404(User.objects.select_related("profile"), username=username)
     other = get_object_or_404(User.objects.select_related("profile"), username=other_username)
 
-    # must share at least one squad with the requester
     shared = Squad.objects.filter(
         membership__user=request.user
     ).filter(
@@ -265,8 +281,36 @@ def compare_cakes(request, username, other_username):
     rows = [{"match": m, "pred_a": preds_a.get(m.id), "pred_b": preds_b.get(m.id)}
             for m in finished]
 
+    compare_wagers = Wager.objects.filter(
+        status=Wager.SETTLED
+    ).filter(
+        Q(challenger=viewed, opponent=other) | Q(challenger=other, opponent=viewed)
+    ).select_related("challenger", "opponent", "winner")
+
+    compare_wager_rows = []
+    for w in compare_wagers:
+        loser = w.opponent if w.winner == w.challenger else w.challenger
+        compare_wager_rows.append({
+            "wager": w,
+            "won": w.winner == viewed,
+            "winner": w.winner,
+            "loser": loser,
+        })
+
     return render(request, "prono/compare_cakes.html", {
         "viewed": viewed,
         "other": other,
         "rows": rows,
+        "compare_wager_rows": compare_wager_rows,
     })
+
+
+@login_required
+@require_POST
+def claim_wager(request, wager_id):
+    wager = get_object_or_404(Wager, pk=wager_id)
+    if wager.winner != request.user or wager.status != Wager.SETTLED:
+        return HttpResponseForbidden()
+    wager.claimed = True
+    wager.save(update_fields=["claimed"])
+    return JsonResponse({"claimed": True})

@@ -25,6 +25,36 @@
   <p class="meta">No shared squads.</p>
 {% endif %}
 
+{% if wager_rows %}
+<h2 class="section-title">🍒 Bake-off ledger</h2>
+<table class="pred-table" id="wager-ledger">
+  <thead>
+    <tr><th>Outcome</th><th>Stake</th><th></th></tr>
+  </thead>
+  <tbody>
+  {% for row in wager_rows %}
+    <tr>
+      <td>
+        {% if row.won %}
+          🏆 <strong>{{ row.winner.username }}</strong> gets from <strong>{{ row.loser.username }}</strong>
+        {% else %}
+          📋 <strong>{{ row.winner.username }}</strong> is owed by <strong>{{ row.loser.username }}</strong>
+        {% endif %}
+      </td>
+      <td>{{ row.wager.stake }}</td>
+      <td>
+        {% if row.wager.claimed %}
+          <span class="claimed-tick">✔ Claimed!</span>
+        {% elif row.won and is_own %}
+          <button class="btn small claim-btn" data-id="{{ row.wager.id }}">Claim</button>
+        {% endif %}
+      </td>
+    </tr>
+  {% endfor %}
+  </tbody>
+</table>
+{% endif %}
+
 {% if is_own and upcoming_preds %}
 <h2 class="section-title">
   Your upcoming picks
@@ -78,5 +108,20 @@ if (btn) {
     btn.textContent = hidden ? 'Hide' : 'Show';
   });
 }
+
+document.querySelectorAll('.claim-btn').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    const res = await fetch(`/wagers/${btn.dataset.id}/claim/`, {
+      method: 'POST',
+      headers: {'X-CSRFToken': CSRF},
+    });
+    if (res.ok) {
+      btn.replaceWith(Object.assign(document.createElement('span'), {
+        className: 'claimed-tick',
+        textContent: '✔ Claimed!',
+      }));
+    }
+  });
+});
 </script>
 {% endblock %}
