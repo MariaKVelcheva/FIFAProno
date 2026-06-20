@@ -306,6 +306,7 @@ def compare_cakes(request, username, other_username):
         "compare_wager_rows": compare_wager_rows,
     })
 
+
 @login_required
 @require_POST
 def claim_wager(request, wager_id):
@@ -316,4 +317,4 @@ def claim_wager(request, wager_id):
         return HttpResponseForbidden()
     wager.claimed = True
     wager.save(update_fields=["claimed"])
-    return JsonResponse({"claimed": True})
+    return redirect(request.META.get('HTTP_REFERER', 'dashboard'))

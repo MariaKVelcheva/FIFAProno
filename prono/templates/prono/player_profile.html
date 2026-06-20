@@ -45,8 +45,11 @@
       <td>
         {% if row.wager.claimed %}
           <span class="claimed-tick">✔ Claimed!</span>
-        {% elif row.won and is_own %}
-          <button class="btn small claim-btn" data-id="{{ row.wager.id }}">Claim</button>
+        {% elif row.wager.status == 'S' %}
+          <form method="post" action="{% url 'claim_wager' row.wager.id %}" class="inline">
+  {% csrf_token %}
+  <button type="submit" class="btn small">Claim</button>
+</form>
         {% endif %}
       </td>
     </tr>
@@ -108,25 +111,5 @@ if (btn) {
     btn.textContent = hidden ? 'Hide' : 'Show';
   });
 }
-
-document.querySelectorAll('.claim-btn').forEach(btn => {
-  btn.addEventListener('click', async () => {
-    const csrfToken = document.cookie.split('; ')
-      .find(r => r.startsWith('csrftoken='))
-      ?.split('=')[1];
-    const res = await fetch(`/wagers/${btn.dataset.id}/claim/`, {
-      method: 'POST',
-      headers: {'X-CSRFToken': csrfToken},
-    });
-    if (res.ok) {
-      btn.replaceWith(Object.assign(document.createElement('span'), {
-        className: 'claimed-tick',
-        textContent: '✔ Claimed!',
-      }));
-    } else {
-      console.log('claim failed:', res.status);
-    }
-  });
-});
 </script>
 {% endblock %}
