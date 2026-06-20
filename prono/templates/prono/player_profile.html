@@ -111,15 +111,20 @@ if (btn) {
 
 document.querySelectorAll('.claim-btn').forEach(btn => {
   btn.addEventListener('click', async () => {
+    const csrfToken = document.cookie.split('; ')
+      .find(r => r.startsWith('csrftoken='))
+      ?.split('=')[1];
     const res = await fetch(`/wagers/${btn.dataset.id}/claim/`, {
       method: 'POST',
-      headers: {'X-CSRFToken': CSRF},
+      headers: {'X-CSRFToken': csrfToken},
     });
     if (res.ok) {
       btn.replaceWith(Object.assign(document.createElement('span'), {
         className: 'claimed-tick',
         textContent: '✔ Claimed!',
       }));
+    } else {
+      console.log('claim failed:', res.status);
     }
   });
 });

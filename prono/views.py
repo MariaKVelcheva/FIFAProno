@@ -28,7 +28,9 @@ def signup(request):
 
 def dashboard(request):
     now = timezone.now()
-    upcoming = Match.objects.filter(kickoff__gte=now).select_related("home_team", "away_team")[:18]
+    upcoming = Match.objects.exclude(
+        status="FINISHED"
+    ).select_related("home_team", "away_team").order_by("kickoff")[:18]
     finished = (
         Match.objects.filter(status="FINISHED")
         .select_related("home_team", "away_team")
@@ -304,12 +306,13 @@ def compare_cakes(request, username, other_username):
         "compare_wager_rows": compare_wager_rows,
     })
 
-
 @login_required
 @require_POST
 def claim_wager(request, wager_id):
     wager = get_object_or_404(Wager, pk=wager_id)
-    if wager.winner != request.user or wager.status != Wager.SETTLED:
+    if wager.status != Wager.SETTLED:
+        return HttpResponseForbidden()
+    if request.user.id not in (wager.challenger_id, wager.opponent_id):
         return HttpResponseForbidden()
     wager.claimed = True
     wager.save(update_fields=["claimed"])
