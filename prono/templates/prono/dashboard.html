@@ -1,20 +1,43 @@
 {% extends "prono/base.html" %}
 {% block content %}
+
+{% if user.is_authenticated %}
+<div id="qp-overlay" class="qp-overlay" hidden>
+  <div class="qp-modal">
+    <div class="qp-header">
+      <span class="qp-counter" id="qp-counter"></span>
+      <button class="qp-close" id="qp-close" title="Close">✕</button>
+    </div>
+    <div class="qp-body" id="qp-body"></div>
+    <div class="qp-footer">
+      <button class="btn ghost small" id="qp-prev">←</button>
+      <button class="btn small" id="qp-next">→</button>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <header class="hero">
   <p class="eyebrow">FIFA World Cupcake™ · Group stage to grand finale</p>
   <h1>Half-baked<br>predictions<span class="accent"> with friends.</span></h1>
-    {% if user.is_authenticated %}
+  {% if user.is_authenticated %}
   <div class="score-pill">🧁 MY POINTS <strong>{{ total }}</strong></div>
-{% endif %}
+  {% endif %}
 </header>
 
 <h2 class="section-title">Fresh from the oven — make your predictions</h2>
 <div class="match-grid">
 {% for m in upcoming %}
   {% with p=preds|default:None %}
-  <article class="card match-card {% if not m.is_open %}locked{% endif %}" data-id="{{ m.id }}">
+  <article class="card match-card {% if not m.is_open %}locked{% endif %}" data-id="{{ m.id }}"
+    data-home="{{ m.home_team.name|default:'TBD' }}"
+    data-away="{{ m.away_team.name|default:'TBD' }}"
+    data-meta="{{ m.group|default:m.stage }} · {{ m.kickoff|date:'D d M, H:i' }}"
+    data-open="{% if m.is_open and m.home_team and m.away_team %}1{% else %}0{% endif %}"
+    data-pred-home="{% for mid, pr in preds.items %}{% if mid == m.id %}{{ pr.home_score }}{% endif %}{% endfor %}"
+    data-pred-away="{% for mid, pr in preds.items %}{% if mid == m.id %}{{ pr.away_score }}{% endif %}{% endfor %}">
     <div class="wrapper-edge"></div>
-      <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"D d M, H:i" }}{% if m.is_knockout %} · <span class="ko">🍒 DOUBLE FROSTING ×2</span>{% endif %}</p>
+    <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"D d M, H:i" }}{% if m.is_knockout %} · <span class="ko">🍒 DOUBLE FROSTING ×2</span>{% endif %}</p>
     <div class="teams">
       <span class="team">{% if m.home_team.crest %}<img src="{{ m.home_team.crest }}" alt="">{% endif %}{{ m.home_team.name|default:"TBD" }}</span>
       <span class="team">{% if m.away_team.crest %}<img src="{{ m.away_team.crest }}" alt="">{% endif %}{{ m.away_team.name|default:"TBD" }}</span>
@@ -25,12 +48,11 @@
       <span class="dash">:</span>
       <input type="number" min="0" max="20" class="score-in away" value="{% for mid, pr in preds.items %}{% if mid == m.id %}{{ pr.away_score }}{% endif %}{% endfor %}" placeholder="–">
       {% if user.is_authenticated %}
-  <button class="btn candle save-btn"><span class="flame">🕯️</span> Bake it in</button>
-  <span class="saved-tick" hidden>🧁 saved!</span>
-{% else %}
-  <a href="{% url 'signup' %}" class="btn candle" style="text-decoration: none;">🕯️ Bake it in</a>
-{% endif %}
-      <span class="saved-tick" hidden>🧁 saved!</span>
+        <button class="btn candle save-btn"><span class="flame">🕯️</span> Bake it in</button>
+        <span class="saved-tick" hidden>🧁 saved!</span>
+      {% else %}
+        <a href="{% url 'signup' %}" class="btn candle" style="text-decoration:none;">🕯️ Bake it in</a>
+      {% endif %}
     </div>
     {% else %}<p class="meta locked-note">📪 Oven's closed</p>{% endif %}
   </article>
@@ -42,8 +64,8 @@
 <div class="match-grid">
 {% for m in finished %}
   <article class="card match-card finished">
-  <div class="wrapper-edge"></div>
-      <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"d M" }}</p>
+    <div class="wrapper-edge"></div>
+    <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"d M" }}</p>
     <div class="teams final">
       <span class="team">{{ m.home_team.name|default:"TBD" }}</span>
       <span class="final-score">{{ m.home_score }}–{{ m.away_score }}</span>
@@ -82,5 +104,114 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
     } else { alert((await res.json()).error || 'Could not save.'); }
   });
 });
+
+{% if user.is_authenticated %}
+(function () {
+  const cards = [...document.querySelectorAll('.match-card:not(.locked)')];
+  const unrated = cards.filter(c =>
+    c.dataset.open === '1' &&
+    c.dataset.predHome === '' &&
+    c.dataset.predAway === ''
+  );
+  if (!unrated.length) return;
+
+  const overlay  = document.getElementById('qp-overlay');
+  const body     = document.getElementById('qp-body');
+  const counter  = document.getElementById('qp-counter');
+  const btnClose = document.getElementById('qp-close');
+  const btnPrev  = document.getElementById('qp-prev');
+  const btnNext  = document.getElementById('qp-next');
+
+  let idx = 0;
+
+  function render() {
+    const c = unrated[idx];
+    const id   = c.dataset.id;
+    const home = c.dataset.home;
+    const away = c.dataset.away;
+    const meta = c.dataset.meta;
+    counter.textContent = `${idx + 1} / ${unrated.length}`;
+    btnPrev.disabled = idx === 0;
+    btnNext.textContent = idx === unrated.length - 1 ? '✔ Done' : '→';
+
+    body.innerHTML = `
+      <p class="qp-meta">${meta}</p>
+      <div class="qp-teams">
+        <span class="qp-team">${home}</span>
+        <span class="qp-vs">vs</span>
+        <span class="qp-team">${away}</span>
+      </div>
+      <div class="qp-inputs">
+        <input type="number" min="0" max="20" class="score-in qp-home" placeholder="–" value="">
+        <span class="dash">:</span>
+        <input type="number" min="0" max="20" class="score-in qp-away" placeholder="–" value="">
+      </div>
+      <div class="qp-save-row">
+        <button class="btn candle qp-save" data-id="${id}">
+          <span class="flame">🕯️</span> Bake it in
+        </button>
+        <span class="qp-tick" hidden>🧁 saved!</span>
+      </div>
+    `;
+
+    body.querySelector('.qp-save').addEventListener('click', async () => {
+      const homeVal = body.querySelector('.qp-home').value;
+      const awayVal = body.querySelector('.qp-away').value;
+      if (homeVal === '' || awayVal === '') return;
+
+      const res = await fetch(`/predict/${id}/`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json', 'X-CSRFToken': CSRF},
+        body: JSON.stringify({home: homeVal, away: awayVal})
+      });
+
+      if (res.ok) {
+        c.dataset.predHome = homeVal;
+        c.dataset.predAway = awayVal;
+        const gridHome = c.querySelector('.home');
+        const gridAway = c.querySelector('.away');
+        if (gridHome) gridHome.value = homeVal;
+        if (gridAway) gridAway.value = awayVal;
+
+        const tick = body.querySelector('.qp-tick');
+        const saveBtn = body.querySelector('.qp-save');
+        saveBtn.classList.add('blown');
+        saveBtn.querySelector('.flame').textContent = '💨';
+        tick.hidden = false;
+
+        setTimeout(() => {
+          unrated.splice(idx, 1);
+          if (!unrated.length) { close(); return; }
+          if (idx >= unrated.length) idx = unrated.length - 1;
+          render();
+        }, 900);
+      } else {
+        alert((await res.json()).error || 'Could not save.');
+      }
+    });
+  }
+
+  function close() {
+    overlay.hidden = true;
+    document.body.style.overflow = '';
+  }
+
+  btnClose.addEventListener('click', close);
+  overlay.addEventListener('click', e => { if (e.target === overlay) close(); });
+  document.addEventListener('keydown', e => {
+    if (!overlay.hidden && e.key === 'Escape') close();
+  });
+
+  btnPrev.addEventListener('click', () => { if (idx > 0) { idx--; render(); } });
+  btnNext.addEventListener('click', () => {
+    if (idx < unrated.length - 1) { idx++; render(); }
+    else close();
+  });
+
+  render();
+  overlay.hidden = false;
+  document.body.style.overflow = 'hidden';
+})();
+{% endif %}
 </script>
 {% endblock %}

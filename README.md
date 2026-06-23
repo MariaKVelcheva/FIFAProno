@@ -166,7 +166,7 @@ to wake on the next request. Fine for active use during the tournament.
 ---
 ## A note on authorship
 
-Designed and directed by a human. Baked mostly by Claude (Anthropic).
+Designed and directed by a human. Baked alongside Claude (Anthropic).
 The frosting choices were entirely mine.
 
 ## License
