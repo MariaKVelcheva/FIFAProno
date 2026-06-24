@@ -10,14 +10,17 @@ Predict scores, climb your squad's cake stand, and wager promises (never money).
 ## Features
 
 - **Predict scores** for all 104 World Cup matches — locked automatically at kickoff
+- **Quick-predict gallery** — on login, a modal surfaces all unrated upcoming matches one by one so you never miss a prediction before kickoff
 - **Scoring**: exact score = 3 pts · correct outcome = 1 pt · knockout matches ×2 · won wager = 10 pts
-- **Squads** — create a group, share the 6-character invite code with friends (click to copy)
+- **Squads / Kitchen brigades** — create a group, share the 6-character invite code with friends (click to copy)
 - **Cake stand scoreboard** per squad — top 5 on tiered display, rest in the "also baking" list
-- **Bake-offs** — challenge a squad mate to a promise (loser cooks dinner, etc.), no money involved
-- **Kitchen chat** — message wall per squad, polls every 15s with toast notifications across all your squads
-- **Cupcake mascot avatars** — pick your dessert at signup
+- **Bake-offs** — challenge a squad mate to a promise (loser cooks dinner, etc.), no money involved; settled wagers are claimable by either party
+- **Kitchen chat** — message wall per squad, polls every 15s with toast notifications and unread badge across all your squads
+- **Player profiles** — visit any squad mate's profile to see their past predictions, points total, and shared brigades
+- **Compare cakes** — side-by-side prediction comparison between any two players in a shared squad, including bake-off history
+- **Cupcake mascot avatars** — pick your dessert at signup; your avatar appears throughout the app including on the scoreboard and as a section divider on the dashboard
 - Browse matches and see results without an account — sign up only required to predict
-
+- **Mosaic card layout** — match cards arranged in a 1-2-3 pyramid pattern with organic tilts and padding variation
 ---
 
 ## Local setup

@@ -124,7 +124,7 @@ function buildDivider(grid, avatar) {
   div.style.gridColumn = '1 / -1';
 
   const containerWidth = grid.getBoundingClientRect().width || grid.offsetWidth;
-  const emojiSlot = 30;
+  const emojiSlot = 48;
   const count = Math.max(6, Math.floor(containerWidth / emojiSlot));
   div.textContent = avatar.repeat(count);
   return div;
