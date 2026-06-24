@@ -155,7 +155,6 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
     } else { alert((await res.json()).error || 'Could not save.'); }
   });
 });
-
 {% if user.is_authenticated %}
 (function () {
   const cards = [...document.querySelectorAll('.match-card:not(.locked)')];
@@ -165,7 +164,9 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
     c.dataset.predAway === ''
   );
   if (!unrated.length) return;
-
+  const total = unrated.length;
+  const rated = new Set();
+  
   const overlay  = document.getElementById('qp-overlay');
   const body     = document.getElementById('qp-body');
   const counter  = document.getElementById('qp-counter');
@@ -181,9 +182,20 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
     const home = c.dataset.home;
     const away = c.dataset.away;
     const meta = c.dataset.meta;
-    counter.textContent = `${idx + 1} / ${unrated.length}`;
+    const alreadyRated = rated.has(idx);
+
+    counter.textContent = `${idx + 1} / ${total}`;
     btnPrev.disabled = idx === 0;
-    btnNext.textContent = idx === unrated.length - 1 ? '✔ Done' : '→';
+
+    const isLast = idx === total - 1;
+    const allRated = rated.size === total;
+    if (allRated) {
+      btnNext.classList.add('blown');
+      btnNext.querySelector('.flame').textContent = '💨';
+    } else {
+      btnNext.classList.remove('blown');
+      btnNext.querySelector('.flame').textContent = '🕯️';
+    }
 
     body.innerHTML = `
       <p class="qp-meta">${meta}</p>
@@ -193,21 +205,28 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
         <span class="qp-team">${away}</span>
       </div>
       <div class="qp-inputs">
-        <input type="number" min="0" max="20" class="score-in qp-home" placeholder="–" value="">
+        <input type="number" min="0" max="20" class="score-in qp-home" placeholder="–"
+          value="${alreadyRated ? c.dataset.predHome : ''}">
         <span class="dash">:</span>
-        <input type="number" min="0" max="20" class="score-in qp-away" placeholder="–" value="">
+        <input type="number" min="0" max="20" class="score-in qp-away" placeholder="–"
+          value="${alreadyRated ? c.dataset.predAway : ''}">
       </div>
       <div class="qp-save-row">
         <button class="btn candle qp-save" data-id="${id}">
-          <span class="flame">🕯️</span> Bake it in
+          <span class="flame">${alreadyRated ? '💨' : '🕯️'}</span>
+          ${alreadyRated ? 'Saved!' : 'Bake it in'}
         </button>
-        <span class="qp-tick" hidden>🧁 saved!</span>
+        <span class="qp-tick" ${alreadyRated ? '' : 'hidden'}>🧁 saved!</span>
       </div>
     `;
 
-    body.querySelector('.qp-save').addEventListener('click', async () => {
-      const homeVal = body.querySelector('.qp-home').value;
-      const awayVal = body.querySelector('.qp-away').value;
+    const saveBtn = body.querySelector('.qp-save');
+    const homeInput = body.querySelector('.qp-home');
+    const awayInput = body.querySelector('.qp-away');
+
+    async function doSave() {
+      const homeVal = homeInput.value;
+      const awayVal = awayInput.value;
       if (homeVal === '' || awayVal === '') return;
 
       const res = await fetch(`/predict/${id}/`, {
@@ -224,22 +243,46 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
         if (gridHome) gridHome.value = homeVal;
         if (gridAway) gridAway.value = awayVal;
 
-        const tick = body.querySelector('.qp-tick');
-        const saveBtn = body.querySelector('.qp-save');
+        rated.add(idx);
+
         saveBtn.classList.add('blown');
         saveBtn.querySelector('.flame').textContent = '💨';
-        tick.hidden = false;
+        saveBtn.textContent = '';
+        saveBtn.insertAdjacentHTML('afterbegin', '<span class="flame">💨</span> Saved!');
+        body.querySelector('.qp-tick').hidden = false;
 
         setTimeout(() => {
-          unrated.splice(idx, 1);
-          if (!unrated.length) { close(); return; }
-          if (idx >= unrated.length) idx = unrated.length - 1;
-          render();
+          const nextUnrated = findNextUnrated(idx);
+          if (nextUnrated !== -1) {
+            idx = nextUnrated;
+            render();
+          } else if (rated.size === total) {
+            setTimeout(close, 600);
+          }
         }, 900);
       } else {
         alert((await res.json()).error || 'Could not save.');
       }
+    }
+
+    saveBtn.addEventListener('click', doSave);
+
+    [homeInput, awayInput].forEach(input => {
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); doSave(); }
+      });
     });
+  }
+
+  function findNextUnrated(fromIdx) {
+    for (let i = fromIdx + 1; i < total; i++) {
+      if (!rated.has(i)) return i;
+    }
+    
+    for (let i = 0; i < fromIdx; i++) {
+      if (!rated.has(i)) return i;
+    }
+    return -1;
   }
 
   function close() {
@@ -253,9 +296,13 @@ document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
     if (!overlay.hidden && e.key === 'Escape') close();
   });
 
-  btnPrev.addEventListener('click', () => { if (idx > 0) { idx--; render(); } });
+  btnPrev.addEventListener('click', () => {
+    if (idx > 0) { idx--; render(); }
+  });
   btnNext.addEventListener('click', () => {
-    if (idx < unrated.length - 1) { idx++; render(); }
+    if (rated.size === total) { close(); return; }
+    const next = findNextUnrated(idx);
+    if (next !== -1) { idx = next; render(); }
     else close();
   });
 
