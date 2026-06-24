@@ -8,7 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@500;600;700&family=Nunito:wght@400;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="{% static 'prono/style.css' %}?v=6">
 </head>
-<body>
+<body data-avatar="{% if user.is_authenticated %}{{ user.profile.avatar }}{% else %}🧁{% endif %}">
 <nav class="nav">
   <a class="brand" href="{% url 'dashboard' %}">🧁 WORLD<span>CUPCAKE</span></a>
   <div class="nav-links">

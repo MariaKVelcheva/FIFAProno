@@ -21,7 +21,7 @@
   <p class="eyebrow">FIFA World Cupcake™ · Group stage to grand finale</p>
   <h1>Half-baked<br>predictions<span class="accent"> with friends.</span></h1>
   {% if user.is_authenticated %}
-  <div class="score-pill">🧁 MY POINTS <strong>{{ total }}</strong></div>
+<div class="score-pill">{{ user.profile.avatar }} MY POINTS <strong>{{ total }}</strong></div>
   {% endif %}
 </header>
 
@@ -29,7 +29,7 @@
 <div class="match-grid">
 {% for m in upcoming %}
   {% with p=preds|default:None %}
-<article class="card match-card {% if not m.is_open %}locked{% endif %}{% if m.is_knockout %} wide-card{% endif %}" data-id="{{ m.id }}"
+  <article class="card match-card {% if not m.is_open %}locked{% endif %}" data-id="{{ m.id }}"
     data-home="{{ m.home_team.name|default:'TBD' }}"
     data-away="{{ m.away_team.name|default:'TBD' }}"
     data-meta="{{ m.group|default:m.stage }} · {{ m.kickoff|date:'D d M, H:i' }}"
@@ -63,7 +63,7 @@
 <h2 class="section-title">Out of the oven — results</h2>
 <div class="match-grid">
 {% for m in finished %}
-<article class="card match-card finished{% if m.is_knockout %} wide-card{% endif %}">
+  <article class="card match-card finished">
     <div class="wrapper-edge"></div>
     <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"d M" }}</p>
     <div class="teams final">
@@ -80,7 +80,58 @@
 {% endblock %}
 
 {% block scripts %}
-<script>
+<script>function applyPyramidLayout(gridSelector, avatar) {
+  const grids = document.querySelectorAll(gridSelector);
+  grids.forEach(grid => {
+    const cards = [...grid.querySelectorAll('.match-card')];
+    if (!cards.length) return;
+
+    const pattern = [1, 2, 3];
+    const COLS = 6;
+    const span = COLS / 3;
+    const cycleSize = pattern.reduce((a, b) => a + b, 0); // 6
+    let cardIdx = 0;
+    let rowIdx = 0;
+    let cardsInCycle = 0;
+
+    while (cardIdx < cards.length) {
+      const rowSize = pattern[rowIdx % pattern.length];
+      const cardsInRow = Math.min(rowSize, cards.length - cardIdx);
+      const totalUsed = cardsInRow * span;
+      const startOffset = Math.floor((COLS - totalUsed) / 2) + 1;
+
+      for (let i = 0; i < cardsInRow; i++) {
+        const colStart = startOffset + i * span;
+        cards[cardIdx].style.gridColumn = `${colStart} / ${colStart + span}`;
+        cardIdx++;
+      }
+      cardsInCycle += cardsInRow;
+      rowIdx++;
+
+      if (cardsInCycle >= cycleSize && cardIdx < cards.length) {
+        cardsInCycle = 0;
+        const divider = buildDivider(grid, avatar);
+        grid.insertBefore(divider, cards[cardIdx]);
+      }
+    }
+  });
+}
+
+function buildDivider(grid, avatar) {
+  const div = document.createElement('div');
+  div.className = 'avatar-divider';
+  div.setAttribute('aria-hidden', 'true');
+  div.style.gridColumn = '1 / -1';
+
+  const containerWidth = grid.getBoundingClientRect().width || grid.offsetWidth;
+  const emojiSlot = 30;
+  const count = Math.max(6, Math.floor(containerWidth / emojiSlot));
+  div.textContent = avatar.repeat(count);
+  return div;
+}
+
+const userAvatar = document.body.dataset.avatar || '🧁';
+applyPyramidLayout('.match-grid', userAvatar);
 document.querySelectorAll('.match-card:not(.locked) .save-btn').forEach(btn => {
   btn.addEventListener('click', async () => {
     const card = btn.closest('.match-card');
