@@ -29,7 +29,7 @@
 <div class="match-grid">
 {% for m in upcoming %}
   {% with p=preds|default:None %}
-  <article class="card match-card {% if not m.is_open %}locked{% endif %}" data-id="{{ m.id }}"
+<article class="card match-card {% if not m.is_open %}locked{% endif %}{% if m.is_knockout %} wide-card{% endif %}" data-id="{{ m.id }}"
     data-home="{{ m.home_team.name|default:'TBD' }}"
     data-away="{{ m.away_team.name|default:'TBD' }}"
     data-meta="{{ m.group|default:m.stage }} · {{ m.kickoff|date:'D d M, H:i' }}"
@@ -63,7 +63,7 @@
 <h2 class="section-title">Out of the oven — results</h2>
 <div class="match-grid">
 {% for m in finished %}
-  <article class="card match-card finished">
+<article class="card match-card finished{% if m.is_knockout %} wide-card{% endif %}">
     <div class="wrapper-edge"></div>
     <p class="meta">{{ m.group|default:m.stage }} · {{ m.kickoff|date:"d M" }}</p>
     <div class="teams final">
